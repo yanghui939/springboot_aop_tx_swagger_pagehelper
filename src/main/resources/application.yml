@@ -1,0 +1,26 @@
+#定义端口
+server:
+  port: 8081
+#配置数据源
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/yh3?serverTimezone=Asia/Shanghai
+    password: root
+    username: root
+#整合mybatis
+mybatis:
+  mapper-locations: classpath:mapper/*Mapper.xml
+  type-aliases-package: com.study.pojo
+#设置日志级别
+logging:
+  level:
+    root: info
+
+#    整合pagehelper
+pagehelper:
+  helper-dialect: mysql
+  params: count=countSql
+  reasonable: true
+  support-methods-arguments: true
+

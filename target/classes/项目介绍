@@ -1,0 +1,163 @@
+本项目是springboot实现了注解aop,注解事务，集成了swagger插件，pagehelper插件
+sql脚本在resources目录下的user.sql里
+0、springboot整合mybatis
+    0.1、pom文件导入依赖
+                //springboot对web支持的依赖
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-web</artifactId>
+                </dependency>
+                //springboot对单元测试支持的依赖
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-test</artifactId>
+                </dependency>
+                //springboot对热部署支持的依赖
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-devtools</artifactId>
+                </dependency>
+                //springboot对mybatis支持的依赖
+                <dependency>
+                    <groupId>org.mybatis.spring.boot</groupId>
+                    <artifactId>mybatis-spring-boot-starter</artifactId>
+                    <version>2.1.1</version>
+                </dependency>
+                //数据库驱动依赖
+                <dependency>
+                    <groupId>mysql</groupId>
+                    <artifactId>mysql-connector-java</artifactId>
+                </dependency>
+                //mybatis依赖
+                <dependency>
+                    <groupId>org.mybatis</groupId>
+                    <artifactId>mybatis</artifactId>
+                    <version>3.5.3</version>
+                </dependency>
+    0.2、配置yaml文件
+        #配置数据源
+        spring:
+          datasource:
+            driver-class-name: com.mysql.cj.jdbc.Driver
+            url: jdbc:mysql://localhost:3306/yh3?serverTimezone=Asia/Shanghai
+            password: root
+            username: root
+        #整合mybatis
+        mybatis:
+        //配置映射文件路径
+          mapper-locations: classpath:mapper/*Mapper.xml
+          //配置该包下的类别名为类名首字母小写
+          type-aliases-package: com.study.pojo
+1、springboot实现注解aop步骤
+    1.1、pom文件导入依赖
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-aop</artifactId>
+            </dependency>
+    1.2、编写切面类
+    //让springboot扫描生成bean
+    @Component
+    //告知springboot自己是切面类
+    @Aspect
+    //lombok的日志注解
+    @Slf4j
+    public class Aop {
+        //定义切点
+        @Pointcut("execution(* *..*.*ServiceImpl.*(..))")
+        public void pt2() {}
+        //绑定切点和前置通知
+        @Before("pt2()")
+        public void before(JoinPoint joinPoint) {
+            //获取方法名称
+            String methodName = joinPoint.getSignature().getName();
+            //获取方法参数
+            List<Object> argList = Arrays.asList(joinPoint.getArgs());
+            //这里不可以用debug打印，因为springboot默认的日志级别是info
+            log.info("前置通知的方法名为：{}，参数为：{}", methodName, argList);
+        }
+        //绑定切点和异常通知
+        @AfterThrowing(pointcut = "pt2()", throwing = "ex")
+        public void afterThrowing(JoinPoint joinPoint, Exception ex) {
+            String methodName = joinPoint.getSignature().getName();
+            List<Object> argList = Arrays.asList(joinPoint.getArgs());
+            log.info("异常通知的方法名为：{}，参数为：{}，异常为：{}", methodName, argList, ex);
+        }
+        //绑定切点和后置通知
+        @AfterReturning(pointcut = "pt2()", returning = "result")
+        public void afterReturning(JoinPoint joinPoint, Object result) {
+            String methodName = joinPoint.getSignature().getName();
+            List<Object> argList = Arrays.asList(joinPoint.getArgs());
+            log.info("后置通知的方法名为：{}，参数为：{}，返回为：{}", methodName, argList, result);
+        }
+        //绑定切点和最终通知
+        @After("pt2()")
+        public void after(JoinPoint joinPoint) {
+            String methodName = joinPoint.getSignature().getName();
+            List<Object> argList = Arrays.asList(joinPoint.getArgs());
+            log.info("最终通知的方法名为：{}，参数为：{}", methodName, argList);
+        }
+    }
+2、springboot实现注解事务步骤
+    只需要在需要使用事务的类上加入事务@Transactional(rollbackFor = Exception.class)
+    该注解的属性可以自己配值
+3、springboot集成swagger
+    3.1、pom文件导入依赖(如果项目中没有json依赖，还要加json依赖，一般json依赖在spring-boot-starter-web启动器已经有了)
+                <dependency>
+                    <groupId>io.springfox</groupId>
+                    <artifactId>springfox-swagger2</artifactId>
+                    <version>2.9.2</version>
+                </dependency>
+                <dependency>
+                    <groupId>io.springfox</groupId>
+                    <artifactId>springfox-swagger-ui</artifactId>
+                    <version>2.9.2</version>
+                </dependency>
+    3.2、编写swagger配置类
+            //告知是配置类
+            @Configuration
+            //开启对swagger支持
+            @EnableSwagger2
+            public class SwaggerConfig {
+                @Bean
+                public Docket createAPI() {
+                    return new Docket(DocumentationType.SWAGGER_2)
+                            .apiInfo(apiInfo())
+                            .select()
+                            .paths(PathSelectors.any())
+                            //配置作用的包
+                            .apis(RequestHandlerSelectors.basePackage("com.study.controller"))
+                            .build();
+                }
+                private ApiInfo apiInfo() {
+                    return new ApiInfoBuilder()
+                            .title("swagger整合springboot")
+                            .version("1.0.0")
+                            .description("swagger描述")
+                            .contact(new Contact("yh", "www.baidu.com", "123.com"))
+                            .build();
+                }
+            }
+4、springboot整合pagehelper插件
+    4.1、pom文件导入依赖
+                <dependency>
+                    <groupId>com.github.pagehelper</groupId>
+                    <artifactId>pagehelper-spring-boot-starter</artifactId>
+                    <version>1.2.13</version>
+                </dependency>
+    4.2、在yaml配置swagger的属性
+        pagehelper:
+          helper-dialect: mysql
+          params: count=countSql
+          reasonable: true
+          support-methods-arguments: true
+    4.3、在类中使用
+        @Override
+            public PageInfo<User> findUserByPage(Integer pageIndex, Integer pageSize) {
+                //开始分页录入分页参数
+                PageHelper.startPage(pageIndex,pageSize);
+                //查询所有数据
+                List<User> allUser = userDao.findAllUser();
+                //将数据放进PageInfo封装返回
+                PageInfo<User> pageInfo = new PageInfo<>(allUser);
+                return pageInfo;
+            }
